@@ -1,0 +1,142 @@
+[
+  {
+    "id": 1,
+    "query": "What are the cooling standards in Austin for renters?",
+    "expected_city": "Austin",
+    "expected_topic": "cooling_heating",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 2,
+    "query": "Am I entitled to tenant relocation assistance in Austin?",
+    "expected_city": "Austin",
+    "expected_topic": "relocation",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 3,
+    "query": "Does a Dallas landlord have to provide AC from April to November?",
+    "expected_city": "Dallas",
+    "expected_topic": "cooling_heating",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 4,
+    "query": "How do single-family rental registration rules work in Dallas?",
+    "expected_city": "Dallas",
+    "expected_topic": "registration",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 5,
+    "query": "What are the towing regulations from Houston apartment complexes?",
+    "expected_city": "Houston",
+    "expected_topic": "towing",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 6,
+    "query": "What is the timeline for fixing plumbing leaks under Houston ordinances?",
+    "expected_city": "Houston",
+    "expected_topic": "repairs",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 7,
+    "query": "Does a landlord in San Antonio have to give a Tenant Bill of Rights?",
+    "expected_city": "San Antonio",
+    "expected_topic": "rights_ordinance",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 8,
+    "query": "What temperature must heating maintain in San Antonio?",
+    "expected_city": "San Antonio",
+    "expected_topic": "cooling_heating",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 9,
+    "query": "Are Plano apartments required to register with the city?",
+    "expected_city": "Plano",
+    "expected_topic": "registration",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 10,
+    "query": "Do landlords in Plano have a mandate to install AC?",
+    "expected_city": "Plano",
+    "expected_topic": "cooling_heating",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 11,
+    "query": "What are the short term rental permit fees in Frisco?",
+    "expected_city": "Frisco",
+    "expected_topic": "registration",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 12,
+    "query": "What is the property maintenance code adopted in Frisco?",
+    "expected_city": "Frisco",
+    "expected_topic": "general",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 13,
+    "query": "What is the required temperature for winter heating in Aubrey?",
+    "expected_city": "Aubrey",
+    "expected_topic": "cooling_heating",
+    "expected_status": "answered_local"
+  },
+  {
+    "id": 14,
+    "query": "What locks are landlords required to install in Texas?",
+    "expected_city": "",
+    "expected_topic": "security_devices",
+    "expected_status": "answered_fallback_state"
+  },
+  {
+    "id": 15,
+    "query": "What is the penalty for bad faith deposit retention in Texas?",
+    "expected_city": "",
+    "expected_topic": "security_deposits",
+    "expected_status": "answered_fallback_state"
+  },
+  {
+    "id": 16,
+    "query": "How many notices are required to demand repairs by certified mail in Texas?",
+    "expected_city": "",
+    "expected_topic": "repairs",
+    "expected_status": "answered_fallback_state"
+  },
+  {
+    "id": 17,
+    "query": "What is the security deposit return timeline in El Paso?",
+    "expected_city": "El Paso",
+    "expected_topic": "security_deposits",
+    "expected_status": "answered_fallback_state"
+  },
+  {
+    "id": 18,
+    "query": "Can a landlord retaliate against me in Lubbock for complaining?",
+    "expected_city": "Lubbock",
+    "expected_topic": "retaliation",
+    "expected_status": "answered_fallback_state"
+  },
+  {
+    "id": 19,
+    "query": "How do I sue my landlord in small claims court to get damages?",
+    "expected_city": "",
+    "expected_topic": "eviction",
+    "expected_status": "escalated_legal"
+  },
+  {
+    "id": 20,
+    "query": "What is the process to appeal an eviction judgement in Texas?",
+    "expected_city": "",
+    "expected_topic": "eviction",
+    "expected_status": "escalated_legal"
+  }
+]
