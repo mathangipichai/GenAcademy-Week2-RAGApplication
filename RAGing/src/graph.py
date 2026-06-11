@@ -137,15 +137,57 @@ Context:
 {context}
 """
 
+    import time
+    from src.api_logger import log_api_call
+    
+    # Identify provider details for logging
+    nebius_key = os.getenv("NEBIUS_API_KEY", "")
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    
+    if nebius_key:
+        provider = "nebius"
+        model_name = "meta-llama/Llama-3.3-70B-Instruct"
+        endpoint = "https://api.tokenfactory.nebius.com/v1/chat/completions"
+    elif openai_key:
+        provider = "openai"
+        model_name = "gpt-4o-mini"
+        endpoint = "https://api.openai.com/v1/chat/completions"
+    else:
+        provider = "local"
+        model_name = "Mock Renter Agent LLM"
+        endpoint = "local_mock_inference"
+
+    start_time = time.time()
     try:
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": query}
         ]
+        # Invoke LangChain LLM (underlying client will make HTTP request)
         response = llm.invoke(messages)
         answer = response.content.strip()
+        duration = time.time() - start_time
+        log_api_call("llm_generation", provider, endpoint, model_name, duration, "success", 200)
     except Exception as e:
-        answer = f"Error generating answer: {e}. However, here are the retrieved documents: \n" + "\n\n".join([d["content"] for d in docs])
+        duration = time.time() - start_time
+        error_str = str(e)
+        status_code = None
+        
+        # Check for timeouts or connection/auth issues
+        if "timeout" in error_str.lower() or "timed out" in error_str.lower():
+            status_code = 408
+        elif "authentication" in error_str.lower() or "auth" in error_str.lower() or "401" in error_str or "key" in error_str.lower():
+            status_code = 401
+            
+        log_api_call("llm_generation", provider, endpoint, model_name, duration, "failed", status_code, error_str)
+        
+        # Graceful fallback: return the raw retrieved facts with a clean notice
+        answer = (
+            "⚠️ API Connection Issue: I encountered a timeout or configuration error contacting the AI provider.\n\n"
+            "Here is the local legal code retrieved from our database for your query:\n\n"
+            + "\n\n".join([f"**[{d['metadata'].get('scope', 'state').upper()}] {d['metadata'].get('location_name', 'Texas')} - {d['metadata'].get('Header 2', d['metadata'].get('Header 1', 'General Ordinance'))}**\n{d['content']}" for d in docs])
+            + "\n\n*Please check your API key configuration in Settings/Connections.*"
+        )
         
     return {
         "response": answer,

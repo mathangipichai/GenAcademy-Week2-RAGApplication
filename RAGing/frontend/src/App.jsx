@@ -12,6 +12,8 @@ function App() {
   const [allResources, setAllResources] = useState({});
   const [activeCitations, setActiveCitations] = useState([]);
   const [pipelineData, setPipelineData] = useState(null);
+  const [apiLogs, setApiLogs] = useState([]);
+  const [apiLogsLoading, setApiLogsLoading] = useState(false);
   const chatFeedRef = useRef(null);
 
   // RAG Studio states
@@ -104,6 +106,36 @@ function App() {
       })
       .catch(err => console.error("Failed to load pipeline stats:", err));
   };
+
+  const fetchApiLogs = () => {
+    setApiLogsLoading(true);
+    fetch(`${API_BASE}/api/logs/api-calls`)
+      .then(res => res.json())
+      .then(data => {
+        setApiLogs(data);
+        setApiLogsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch API logs:", err);
+        setApiLogsLoading(false);
+      });
+  };
+
+  const handleClearApiLogs = () => {
+    if (!window.confirm("Are you sure you want to clear all API call logs?")) return;
+    fetch(`${API_BASE}/api/logs/api-calls/clear`, { method: 'POST' })
+      .then(res => res.json())
+      .then(() => {
+        setApiLogs([]);
+      })
+      .catch(err => console.error("Failed to clear API logs:", err));
+  };
+
+  useEffect(() => {
+    if (dashboardTab === 'apilogs' && view === 'dashboard') {
+      fetchApiLogs();
+    }
+  }, [dashboardTab, view]);
 
   const handleSend = async (textToSend) => {
     const text = textToSend || input;
@@ -1042,6 +1074,12 @@ function App() {
                 >
                   🔑 Model Provider Connections
                 </button>
+                <button 
+                  onClick={() => setDashboardTab('apilogs')}
+                  className={`dashboard-tab-btn ${dashboardTab === 'apilogs' ? 'active' : ''}`}
+                >
+                  📡 API Call History
+                </button>
               </div>
             </div>
 
@@ -1546,6 +1584,106 @@ function App() {
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {dashboardTab === 'apilogs' && (
+              <div className="settings-container">
+                <div className="settings-card" style={{ maxWidth: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>📡 External Model API Call logs & History</h3>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                        Tracks live LLM request response times, endpoints, authorization statuses, and timeouts.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        className="execute-run-btn"
+                        style={{ padding: '8px 16px', fontSize: '13px', margin: 0, background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-glass)' }}
+                        onClick={fetchApiLogs}
+                      >
+                        🔄 Refresh
+                      </button>
+                      <button 
+                        className="execute-run-btn"
+                        style={{ padding: '8px 16px', fontSize: '13px', margin: 0, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                        onClick={handleClearApiLogs}
+                      >
+                        🗑️ Clear Logs
+                      </button>
+                    </div>
+                  </div>
+
+                  {apiLogsLoading ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      Loading API logs history...
+                    </div>
+                  ) : apiLogs.length === 0 ? (
+                    <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border-glass)', borderRadius: '8px' }}>
+                      No external API calls logged yet. Test connection keys or query the assistant chatbot to record API execution history.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {apiLogs.map((log, idx) => (
+                        <div key={idx} style={{
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid var(--border-glass)',
+                          borderRadius: '8px',
+                          padding: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className={`status-badge ${log.status === 'success' ? 'local' : 'escalated'}`} style={{ padding: '4px 10px', fontSize: '10px' }}>
+                                {log.status.toUpperCase()} {log.status_code && `(${log.status_code})`}
+                              </span>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                {new Date(log.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>
+                              ⚡ {log.duration_sec}s Response Time
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px' }}>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)' }}>Provider:</span> <strong style={{ textTransform: 'capitalize' }}>{log.provider}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)' }}>Call Type:</span> <strong>{log.call_type.replace('_', ' ').toUpperCase()}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: 'var(--text-secondary)' }}>Model Name:</span> <code style={{ background: 'rgba(0,0,0,0.2)', padding: '2px 4px', borderRadius: '4px' }}>{log.model_name}</code>
+                            </div>
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Endpoint:</span> <code style={{ fontSize: '11px', color: 'var(--accent-blue)' }}>{log.endpoint}</code>
+                            </div>
+                          </div>
+
+                          {log.error_message && (
+                            <div style={{
+                              background: 'rgba(239, 68, 68, 0.05)',
+                              border: '1px solid rgba(239, 68, 68, 0.15)',
+                              borderRadius: '6px',
+                              padding: '10px 14px',
+                              fontSize: '12.5px',
+                              color: '#ef4444',
+                              fontFamily: 'monospace',
+                              wordBreak: 'break-all'
+                            }}>
+                              <strong>Error Details ({log.error_category || "API Failure"}):</strong> {log.error_message}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                </div>
               </div>
             )}
           </div>

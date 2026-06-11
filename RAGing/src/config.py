@@ -14,21 +14,14 @@ def get_embeddings():
     Returns the appropriate embeddings model based on environment variables.
     Falls back to a local in-memory model if no keys are found.
     """
-    nebius_key = os.getenv("NEBIUS_API_KEY", "")
     openai_key = os.getenv("OPENAI_API_KEY", "")
     
-    if nebius_key:
-        # Use Nebius API for embeddings if they support BAAI/bge-en-icl
-        from langchain_openai import OpenAIEmbeddings
-        return OpenAIEmbeddings(
-            model="BAAI/bge-en-icl",
-            openai_api_key=nebius_key,
-            openai_api_base="https://api.tokenfactory.nebius.com/v1/"
-        )
-    elif openai_key:
+    if openai_key:
         from langchain_openai import OpenAIEmbeddings
         return OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=openai_key)
     else:
+        # Zero-key or Nebius fallback: use HuggingFace local embeddings
+        # (Nebius Token Factory does not support or host embedding models)
         # Zero-key fallback: use HuggingFace local embeddings
         # Since we want to make it easy and not fail on missing keys,
         # we load HuggingFaceEmbeddings using community langchain

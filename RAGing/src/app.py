@@ -458,42 +458,73 @@ async def test_connection_endpoint(request: ConnectionTestRequest):
     Validates api key connection with provider using a quick http post request.
     """
     import requests
+    import time
+    from src.api_logger import log_api_call
     provider = request.provider.lower()
     key = request.api_key.strip()
     
     if not key:
         return {"success": False, "error": "API Key cannot be empty."}
         
+    start_time = time.time()
+    status_code = None
+    endpoint = ""
+    model = ""
+    
     try:
         if provider == "openai":
+            endpoint = "https://api.openai.com/v1/chat/completions"
+            model = "gpt-4o-mini"
             headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-            data = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
-            res = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=data, timeout=8)
+            data = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
+            res = requests.post(endpoint, headers=headers, json=data, timeout=8)
+            status_code = res.status_code
+            duration = time.time() - start_time
             if res.status_code == 200:
+                log_api_call("test_connection", provider, endpoint, model, duration, "success", status_code)
                 return {"success": True, "message": "Successfully connected to OpenAI API!"}
             else:
+                log_api_call("test_connection", provider, endpoint, model, duration, "failed", status_code, res.text)
                 return {"success": False, "error": f"OpenAI error (code {res.status_code}): {res.text}"}
                 
         elif provider == "nebius":
+            endpoint = "https://api.tokenfactory.nebius.com/v1/chat/completions"
+            model = "meta-llama/Llama-3.3-70B-Instruct"
             headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-            data = {"model": "meta-llama/Llama-3.3-70B-Instruct", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
-            res = requests.post("https://api.tokenfactory.nebius.com/v1/chat/completions", headers=headers, json=data, timeout=8)
+            data = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
+            res = requests.post(endpoint, headers=headers, json=data, timeout=8)
+            status_code = res.status_code
+            duration = time.time() - start_time
             if res.status_code == 200:
+                log_api_call("test_connection", provider, endpoint, model, duration, "success", status_code)
                 return {"success": True, "message": "Successfully connected to Nebius Token Factory API!"}
             else:
+                log_api_call("test_connection", provider, endpoint, model, duration, "failed", status_code, res.text)
                 return {"success": False, "error": f"Nebius error (code {res.status_code}): {res.text}"}
                 
         elif provider == "gemini":
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
+            endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            url = f"{endpoint}?key={key}"
+            model = "gemini-1.5-flash"
             data = {"contents": [{"parts": [{"text": "ping"}]}]}
             res = requests.post(url, json=data, timeout=8)
+            status_code = res.status_code
+            duration = time.time() - start_time
             if res.status_code == 200:
+                log_api_call("test_connection", provider, endpoint, model, duration, "success", status_code)
                 return {"success": True, "message": "Successfully connected to Google Gemini API!"}
             else:
+                log_api_call("test_connection", provider, endpoint, model, duration, "failed", status_code, res.text)
                 return {"success": False, "error": f"Gemini error (code {res.status_code}): {res.text}"}
         else:
             return {"success": False, "error": f"Unsupported provider: {provider}"}
+    except requests.exceptions.Timeout:
+        duration = time.time() - start_time
+        log_api_call("test_connection", provider, endpoint, model, duration, "failed", 408, "Request timed out after 8.0 seconds")
+        return {"success": False, "error": "Connection test timed out after 8.0 seconds. Please check your internet connection."}
     except Exception as e:
+        duration = time.time() - start_time
+        log_api_call("test_connection", provider, endpoint or "unknown", model or "unknown", duration, "failed", status_code or 500, str(e))
         return {"success": False, "error": f"Connection failed: {str(e)}"}
 
 @app.post("/api/connections/save")
@@ -518,6 +549,23 @@ async def save_connection_endpoint(request: ConnectionSaveRequest):
         return {"success": True, "message": f"Successfully updated and loaded {key_map[provider]}."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save to .env: {str(e)}")
+
+@app.get("/api/logs/api-calls")
+async def get_api_calls_logs(limit: int = 50):
+    """
+    Returns the recent API call history logs.
+    """
+    from src.api_logger import get_api_logs
+    return get_api_logs(limit=limit)
+
+@app.post("/api/logs/api-calls/clear")
+async def clear_api_calls_logs():
+    """
+    Clears the stored API call logs.
+    """
+    from src.api_logger import clear_api_logs
+    clear_api_logs()
+    return {"success": True, "message": "API logs cleared successfully."}
 
 # Production Readiness: Serve static frontend files directly via FastAPI
 dist_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
